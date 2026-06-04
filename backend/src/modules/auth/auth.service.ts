@@ -3,17 +3,24 @@ import { prisma } from "../../lib/prisma.js";
 import type { RegisterInput } from "./auth.validation.js";
 
 export async function registerUser(data: RegisterInput) {
-  const existingUser = await prisma.user.findFirst({
+  const existingEmail = await prisma.user.findUnique({
     where: {
-      OR: [
-        { email: data.email },
-        { username: data.username },
-      ],
+      email: data.email,
     },
   });
 
-  if (existingUser) {
-    throw new Error("User already exists");
+  if (existingEmail) {
+    throw new Error("Email already exists");
+  }
+
+  const existingUsername = await prisma.user.findUnique({
+    where: {
+      username: data.username,
+    },
+  });
+
+  if (existingUsername) {
+    throw new Error("Username already exists");
   }
 
   const hashedPassword = await argon2.hash(data.password);
