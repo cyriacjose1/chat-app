@@ -6,6 +6,10 @@ export default function Dashboard() {
     (state) => state.logout
   );
 
+  const user = useAuthStore(
+    (state) => state.user
+  );
+
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -16,6 +20,8 @@ export default function Dashboard() {
   return (
     <div>
       <h2>Dashboard</h2>
+
+      <p>Welcome, {user?.username}!</p>
 
       <button onClick={handleLogout}>
         Logout
