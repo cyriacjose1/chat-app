@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { loginUser } from "../api/auth.api";
 import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../store/auth.store";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const navigate = useNavigate();
+  const setToken = useAuthStore(
+  (state) => state.setToken
+);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -15,8 +19,7 @@ export default function Login() {
 
       console.log("Login success:", res);
 
-      // store token temporarily
-      localStorage.setItem("token", res.token);
+      setToken(res.token);
 
       navigate("/dashboard");
     } catch (err: any) {
