@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useAuthStore } from "../store/auth.store";
+import { Link } from "react-router-dom";
 
 export default function Dashboard() {
   const logout = useAuthStore(
@@ -22,6 +23,10 @@ export default function Dashboard() {
       <h2>Dashboard</h2>
 
       <p>Welcome, {user?.username}!</p>
+
+      <Link to="/users">
+      View Users
+      </Link>
 
       <button onClick={handleLogout}>
         Logout

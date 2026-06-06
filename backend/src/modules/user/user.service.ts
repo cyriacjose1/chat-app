@@ -20,3 +20,19 @@ export async function getCurrentUser(
     createdAt: user.createdAt,
   };
 }
+
+export async function getAllUsers() {
+  const users = await prisma.user.findMany({
+    select: {
+      id: true,
+      username: true,
+      email: true,
+      createdAt: true,
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+
+  return users;
+}
