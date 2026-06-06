@@ -21,9 +21,46 @@ export async function createConversation(
     });
 
   if (!targetUser) {
-    throw new Error(
-      "User not found"
+    throw new Error("User not found");
+  }
+
+  const existingConversations =
+    await prisma.conversation.findMany({
+      where: {
+        participants: {
+          some: {
+            userId: currentUserId,
+          },
+        },
+      },
+      include: {
+        participants: true,
+      },
+    });
+
+  const existingConversation =
+    existingConversations.find(
+      (conversation) => {
+        const participantIds =
+          conversation.participants.map(
+            (participant) =>
+              participant.userId
+          );
+
+        return (
+          participantIds.length === 2 &&
+          participantIds.includes(
+            currentUserId
+          ) &&
+          participantIds.includes(
+            data.userId
+          )
+        );
+      }
     );
+
+  if (existingConversation) {
+    return existingConversation;
   }
 
   const conversation =
