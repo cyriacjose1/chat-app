@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { getUsers } from "../api/user.api";
+import { createConversation } from "../api/conversation.api";
+import { useNavigate } from "react-router-dom";
 
 type User = {
   id: string;
@@ -9,6 +11,8 @@ type User = {
 
 export default function Users() {
   const [users, setUsers] = useState<User[]>([]);
+
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function loadUsers() {
@@ -23,6 +27,22 @@ export default function Users() {
     loadUsers();
   }, []);
 
+  const handleStartChat = async (
+    userId: string
+  ) => {
+    try {
+      const res =
+        await createConversation(userId);
+
+      navigate(
+        `/conversations/${res.conversation.id}`
+      );
+    } catch (error) {
+      console.error(error);
+      alert("Failed to create conversation");
+    }
+  };
+
   return (
     <div>
       <h2>Users</h2>
@@ -30,7 +50,16 @@ export default function Users() {
       {users.map((user) => (
         <div key={user.id}>
           <p>{user.username}</p>
+
           <p>{user.email}</p>
+
+          <button
+            onClick={() =>
+              handleStartChat(user.id)
+            }
+          >
+            Chat
+          </button>
         </div>
       ))}
     </div>
