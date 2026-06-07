@@ -3,10 +3,26 @@ import type {
   CreateMessageInput,
 } from "./message.validation.js";
 
+import {
+  isParticipant,
+} from "../conversation/conversation.service.js";
+
 export async function createMessage(
   senderId: string,
   data: CreateMessageInput
 ) {
+  const participant =
+    await isParticipant(
+      data.conversationId,
+      senderId
+    );
+
+  if (!participant) {
+    throw new Error(
+      "Access denied"
+    );
+  }
+
   const message =
     await prisma.message.create({
       data: {
@@ -30,8 +46,21 @@ export async function createMessage(
 }
 
 export async function getMessages(
-  conversationId: string
+  conversationId: string,
+  userId: string
 ) {
+  const participant =
+    await isParticipant(
+      conversationId,
+      userId
+    );
+
+  if (!participant) {
+    throw new Error(
+      "Access denied"
+    );
+  }
+
   return prisma.message.findMany({
     where: {
       conversationId,

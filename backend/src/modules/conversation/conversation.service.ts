@@ -124,3 +124,18 @@ export async function getUserConversations(
     },
   });
 }
+
+export async function isParticipant(
+  conversationId: string,
+  userId: string
+) {
+  const participant =
+    await prisma.conversationParticipant.findFirst({
+      where: {
+        conversationId,
+        userId,
+      },
+    });
+
+  return !!participant;
+}

@@ -48,18 +48,24 @@ export async function list(
   try {
     const messages =
       await getMessages(
-        String(req.params.id)
+        String(req.params.id),
+        req.user!.userId
       );
 
     return res.status(200).json({
       success: true,
       messages,
     });
-  } catch {
-    return res.status(500).json({
-      success: false,
-      message:
-        "Failed to fetch messages",
-    });
-  }
+  } catch (error) {
+  console.error(error);
+
+  return res.status(500).json({
+    success: false,
+    message:
+      error instanceof Error
+        ? error.message
+        : "Failed to fetch messages",
+  });
 }
+}
+
