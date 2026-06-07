@@ -12,3 +12,12 @@ export const createConversation = async (
 
   return res.data;
 };
+
+export const getConversations =
+  async () => {
+    const res = await api.get(
+      "/conversations"
+    );
+
+    return res.data;
+};

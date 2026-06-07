@@ -8,6 +8,10 @@ import {
   create,
 } from "./conversation.controller.js";
 
+import {
+  list,
+} from "./conversation.controller.js";
+
 const router = Router();
 
 router.post(
@@ -15,5 +19,13 @@ router.post(
   authenticate,
   create
 );
+
+router.get(
+  "/",
+  authenticate,
+  list
+);
+
+router.post("/", authenticate, create);
 
 export default router;

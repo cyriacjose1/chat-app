@@ -5,6 +5,7 @@ import {
 
 import {
   createConversation,
+  getUserConversations,
 } from "./conversation.service.js";
 
 import {
@@ -38,6 +39,29 @@ export async function create(
         error instanceof Error
           ? error.message
           : "Failed to create conversation",
+    });
+  }
+}
+
+export async function list(
+  req: Request,
+  res: Response
+) {
+  try {
+    const conversations =
+      await getUserConversations(
+        req.user!.userId
+      );
+
+    return res.status(200).json({
+      success: true,
+      conversations,
+    });
+  } catch {
+    return res.status(500).json({
+      success: false,
+      message:
+        "Failed to fetch conversations",
     });
   }
 }

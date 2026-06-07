@@ -94,3 +94,33 @@ export async function createConversation(
 
   return conversation;
 }
+
+export async function getUserConversations(
+  userId: string
+) {
+  return prisma.conversation.findMany({
+    where: {
+      participants: {
+        some: {
+          userId,
+        },
+      },
+    },
+    include: {
+      participants: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: {
+      updatedAt: "desc",
+    },
+  });
+}

@@ -24,9 +24,17 @@ export default function Dashboard() {
 
       <p>Welcome, {user?.username}!</p>
 
-      <Link to="/users">
-      View Users
-      </Link>
+      <div>
+        <Link to="/users">
+          Users
+        </Link>
+      </div>
+
+      <div>
+        <Link to="/conversations">
+          Conversations
+        </Link>
+      </div>
 
       <button onClick={handleLogout}>
         Logout
