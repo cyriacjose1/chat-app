@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
 import { getUsers } from "../api/user.api";
 import { createConversation } from "../api/conversation.api";
-import { useNavigate } from "react-router-dom";
+import { useAuthStore } from "../store/auth.store";
 
 type User = {
   id: string;
@@ -10,14 +12,21 @@ type User = {
 };
 
 export default function Users() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] =
+    useState<User[]>([]);
 
   const navigate = useNavigate();
+
+  const currentUser =
+    useAuthStore(
+      (state) => state.user
+    );
 
   useEffect(() => {
     async function loadUsers() {
       try {
         const res = await getUsers();
+
         setUsers(res.users);
       } catch (error) {
         console.error(error);
@@ -32,14 +41,19 @@ export default function Users() {
   ) => {
     try {
       const res =
-        await createConversation(userId);
+        await createConversation(
+          userId
+        );
 
       navigate(
         `/conversations/${res.conversation.id}`
       );
     } catch (error) {
       console.error(error);
-      alert("Failed to create conversation");
+
+      alert(
+        "Failed to create conversation"
+      );
     }
   };
 
@@ -47,21 +61,28 @@ export default function Users() {
     <div>
       <h2>Users</h2>
 
-      {users.map((user) => (
-        <div key={user.id}>
-          <p>{user.username}</p>
+      {users
+        .filter(
+          (user) =>
+            user.id !== currentUser?.id
+        )
+        .map((user) => (
+          <div key={user.id}>
+            <p>{user.username}</p>
 
-          <p>{user.email}</p>
+            <p>{user.email}</p>
 
-          <button
-            onClick={() =>
-              handleStartChat(user.id)
-            }
-          >
-            Chat
-          </button>
-        </div>
-      ))}
+            <button
+              onClick={() =>
+                handleStartChat(
+                  user.id
+                )
+              }
+            >
+              Chat
+            </button>
+          </div>
+        ))}
     </div>
   );
 }

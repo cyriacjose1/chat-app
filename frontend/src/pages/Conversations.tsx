@@ -1,12 +1,8 @@
-import { useEffect, useState }
-  from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
-import { Link }
-  from "react-router-dom";
-
-import {
-  getConversations,
-} from "../api/conversation.api";
+import { getConversations } from "../api/conversation.api";
+import { useAuthStore } from "../store/auth.store";
 
 type Participant = {
   user: {
@@ -22,6 +18,10 @@ type Conversation = {
 };
 
 export default function Conversations() {
+  const user = useAuthStore(
+    (state) => state.user
+  );
+
   const [conversations, setConversations] =
     useState<Conversation[]>([]);
 
@@ -47,17 +47,30 @@ export default function Conversations() {
       <h2>Conversations</h2>
 
       {conversations.map(
-        (conversation) => (
-          <div
-            key={conversation.id}
-          >
-            <Link
-              to={`/conversations/${conversation.id}`}
+        (conversation) => {
+          const otherParticipant =
+            conversation.participants.find(
+              (participant) =>
+                participant.user.id !==
+                user?.id
+            );
+
+          return (
+            <div
+              key={conversation.id}
             >
-              Open Conversation
-            </Link>
-          </div>
-        )
+              <Link
+                to={`/conversations/${conversation.id}`}
+              >
+                {
+                  otherParticipant?.user
+                    .username ??
+                  "Unknown User"
+                }
+              </Link>
+            </div>
+          );
+        }
       )}
     </div>
   );
