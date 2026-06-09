@@ -1,4 +1,9 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+  useRef,
+} from "react";
+
 import { useParams } from "react-router-dom";
 
 import { socket } from "../socket";
@@ -11,6 +16,8 @@ import {
 type Message = {
   id: string;
   content: string;
+  createdAt: string;
+
   sender: {
     id: string;
     username: string;
@@ -25,6 +32,9 @@ export default function Conversation() {
 
   const [content, setContent] =
     useState("");
+
+  const messagesEndRef =
+    useRef<HTMLDivElement>(null);
 
   const loadMessages =
     async () => {
@@ -64,7 +74,7 @@ export default function Conversation() {
   useEffect(() => {
     socket.on(
       "receive_message",
-      (message) => {
+      (message: Message) => {
         setMessages(
           (prev) => [
             ...prev,
@@ -80,6 +90,13 @@ export default function Conversation() {
       );
     };
   }, []);
+
+  useEffect(() => {
+    messagesEndRef.current
+      ?.scrollIntoView({
+        behavior: "smooth",
+      });
+  }, [messages]);
 
   const handleSend =
     async () => {
@@ -110,9 +127,25 @@ export default function Conversation() {
               {message.sender.username}
             </strong>
 
-            <p>{message.content}</p>
+            <p>
+              {message.content}
+            </p>
+
+            <small>
+              {new Date(
+                message.createdAt
+              ).toLocaleTimeString(
+                [],
+                {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                }
+              )}
+            </small>
           </div>
         ))}
+
+        <div ref={messagesEndRef} />
       </div>
 
       <input
