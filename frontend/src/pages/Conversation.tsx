@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 
+import { socket } from "../socket";
+
 import {
   getMessages,
   sendMessage,
@@ -42,6 +44,43 @@ export default function Conversation() {
     loadMessages();
   }, [id]);
 
+  useEffect(() => {
+    socket.connect();
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!id) return;
+
+    socket.emit(
+      "join_room",
+      id
+    );
+  }, [id]);
+
+  useEffect(() => {
+    socket.on(
+      "receive_message",
+      (message) => {
+        setMessages(
+          (prev) => [
+            ...prev,
+            message,
+          ]
+        );
+      }
+    );
+
+    return () => {
+      socket.off(
+        "receive_message"
+      );
+    };
+  }, []);
+
   const handleSend =
     async () => {
       if (!id || !content.trim()) {
@@ -55,8 +94,6 @@ export default function Conversation() {
         );
 
         setContent("");
-
-        await loadMessages();
       } catch (error) {
         console.error(error);
       }
