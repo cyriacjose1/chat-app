@@ -7,6 +7,8 @@ import {
   isParticipant,
 } from "../conversation/conversation.service.js";
 
+import { getIO } from "../../socket/index.js";
+
 export async function createMessage(
   senderId: string,
   data: CreateMessageInput
@@ -24,25 +26,32 @@ export async function createMessage(
   }
 
   const message =
-    await prisma.message.create({
-      data: {
-        content: data.content,
-        senderId,
-        conversationId:
-          data.conversationId,
-      },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            username: true,
-            email: true,
-          },
+  await prisma.message.create({
+    data: {
+      content: data.content,
+      senderId,
+      conversationId:
+        data.conversationId,
+    },
+    include: {
+      sender: {
+        select: {
+          id: true,
+          username: true,
+          email: true,
         },
       },
-    });
+    },
+  });
 
-  return message;
+const io = getIO();
+
+io.to(data.conversationId).emit(
+  "receive_message",
+  message
+);
+
+return message;
 }
 
 export async function getMessages(
