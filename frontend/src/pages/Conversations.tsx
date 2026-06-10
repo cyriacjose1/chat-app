@@ -4,6 +4,8 @@ import { Link } from "react-router-dom";
 import { getConversations } from "../api/conversation.api";
 import { useAuthStore } from "../store/auth.store";
 
+import { usePresenceStore } from "../store/presence.store";
+
 type Participant = {
   user: {
     id: string;
@@ -21,6 +23,8 @@ export default function Conversations() {
   const user = useAuthStore(
     (state) => state.user
   );
+
+  const onlineUsers =usePresenceStore((state) => state.onlineUsers);
 
   const [conversations, setConversations] =
     useState<Conversation[]>([]);
@@ -59,15 +63,19 @@ export default function Conversations() {
             <div
               key={conversation.id}
             >
-              <Link
-                to={`/conversations/${conversation.id}`}
-              >
-                {
-                  otherParticipant?.user
-                    .username ??
-                  "Unknown User"
-                }
-              </Link>
+              <Link to={`/conversations/${conversation.id}`}>
+               {onlineUsers.includes(
+               otherParticipant?.user.id ?? ""
+              )
+              ? "🟢 "
+              : "⚫ "}
+
+  {
+    otherParticipant?.user
+      .username ??
+    "Unknown User"
+  }
+</Link>
             </div>
           );
         }

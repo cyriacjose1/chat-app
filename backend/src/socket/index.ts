@@ -2,58 +2,49 @@ import { Server } from "socket.io";
 
 let io: Server;
 
-export function initSocket(
-  server: any
-) {
+const onlineUsers = new Map<string, string>();
+
+export function initSocket(server: any) {
   io = new Server(server, {
     cors: {
-      origin:
-        "http://localhost:5173",
+      origin: "http://localhost:5173",
     },
   });
 
-  io.on(
-    "connection",
-    (socket) => {
-      console.log(
-        "Client connected:",
-        socket.id
-      );
+  io.on("connection", (socket) => {
+    console.log("Client connected:", socket.id);
 
-      socket.on(
-        "join_room",
-        (conversationId: string) => {
-          socket.join(
-            conversationId
-          );
+    socket.on("join_room", (conversationId: string) => {
+      socket.join(conversationId);
+      console.log(`${socket.id} joined ${conversationId}`);
+    });
 
-          console.log(
-            `${socket.id} joined ${conversationId}`
-          );
+    socket.on("register_user", (userId: string) => {
+      onlineUsers.set(userId, socket.id);
+
+      io.emit("online_users", Array.from(onlineUsers.keys()));
+      console.log(`User online: ${userId} (${socket.id})`);
+    });
+
+    socket.on("disconnect", () => {
+      for (const [userId, socketId] of onlineUsers.entries()) {
+        if (socketId === socket.id) {
+          onlineUsers.delete(userId);
+          break; 
         }
-      );
+      }
 
-      socket.on(
-        "disconnect",
-        () => {
-          console.log(
-            "Client disconnected:",
-            socket.id
-          );
-        }
-      );
-    }
-  );
+      io.emit("online_users", Array.from(onlineUsers.keys()));
+      console.log("Client disconnected:", socket.id);
+    });
+  });
 
   return io;
 }
 
 export function getIO() {
   if (!io) {
-    throw new Error(
-      "Socket.IO not initialized"
-    );
+    throw new Error("Socket.IO not initialized");
   }
-
   return io;
 }
