@@ -18,6 +18,29 @@ export function initSocket(server: any) {
       socket.join(conversationId);
       console.log(`${socket.id} joined ${conversationId}`);
     });
+    
+    socket.on(
+  "typing_start",
+  (conversationId: string) => {
+    socket.to(
+      conversationId
+    ).emit(
+      "user_typing"
+    );
+  }
+);
+
+socket.on(
+  "typing_stop",
+  (conversationId: string) => {
+    socket.to(
+      conversationId
+    ).emit(
+      "user_stop_typing"
+    );
+  }
+);
+
 
     socket.on("register_user", (userId: string) => {
       onlineUsers.set(userId, socket.id);

@@ -37,6 +37,12 @@ export default function Conversation() {
   const messagesEndRef =
     useRef<HTMLDivElement>(null);
 
+  const [isTyping, setIsTyping] =
+  useState(false);
+
+  const typingTimeout =
+  useRef<number | null>(null);
+
   const loadMessages =
     async () => {
       if (!id) return;
@@ -99,6 +105,32 @@ export default function Conversation() {
       });
   }, [messages]);
 
+  useEffect(() => {
+  socket.on(
+    "user_typing",
+    () => {
+      setIsTyping(true);
+    }
+  );
+
+  socket.on(
+    "user_stop_typing",
+    () => {
+      setIsTyping(false);
+    }
+  );
+
+  return () => {
+    socket.off(
+      "user_typing"
+    );
+
+    socket.off(
+      "user_stop_typing"
+    );
+  };
+}, []);
+
   const handleSend =
     async () => {
       if (!id || !content.trim()) {
@@ -112,6 +144,10 @@ export default function Conversation() {
         );
 
         setContent("");
+        socket.emit(
+        "typing_stop",
+        id
+        );
       } catch (error) {
         console.error(error);
       }
@@ -149,13 +185,38 @@ export default function Conversation() {
         <div ref={messagesEndRef} />
       </div>
 
+      {isTyping && (
+      <p>
+      Typing...
+      </p>
+     )}
+
       <input
         value={content}
-        onChange={(e) =>
-          setContent(
-            e.target.value
-          )
-        }
+        onChange={(e) => {
+         setContent(
+         e.target.value
+         );
+
+         if (id) {
+         socket.emit(
+        "typing_start",
+         id
+        );
+        if (typingTimeout.current) {
+        clearTimeout(
+        typingTimeout.current
+       );
+       }
+
+       typingTimeout.current =
+       window.setTimeout(() => {
+       socket.emit(
+      "typing_stop",
+      id
+    );
+  }, 1000);
+      }}}
         placeholder="Type a message"
       />
 
