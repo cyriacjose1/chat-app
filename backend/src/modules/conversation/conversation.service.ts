@@ -120,20 +120,17 @@ export async function getUserConversations(
         },
       },
 
-      /* FIX: We change 'include' to 'select' for messages so we can explicitly 
-        choose scalar fields (senderId, isRead) alongside the sender relation.
-      */
       messages: {
         take: 1,
         orderBy: {
           createdAt: "desc",
         },
         select: {
-          id: true,        // Include message ID if needed
-          content: true,   // Include message content text if needed
-          createdAt: true, // Include creation timestamp if needed
-          senderId: true,  // <--- Valid inside a select block!
-          isRead: true,    // <--- Valid inside a select block!
+          id: true,        
+          content: true,  
+          createdAt: true, 
+          senderId: true,  
+          isRead: true,    
           sender: {
             select: {
               id: true,

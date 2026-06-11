@@ -44,6 +44,15 @@ export async function createMessage(
     },
   });
 
+  await prisma.conversation.update({
+  where: {
+    id: data.conversationId,
+  },
+  data: {
+    updatedAt: new Date(),
+  },
+});
+
 const io = getIO();
 
 io.to(data.conversationId).emit(
