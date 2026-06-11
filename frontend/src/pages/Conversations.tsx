@@ -19,6 +19,8 @@ type Participant = {
 type Conversation = {
   id: string;
 
+  unreadCount: number;
+
   participants: Participant[];
 
   messages: {
@@ -100,6 +102,12 @@ export default function Conversations() {
                 .username ??
               "Unknown User"
             }
+
+            {conversation.unreadCount > 0 && (
+            <span>
+            ({conversation.unreadCount})
+            </span>
+      )}
           </div>
 
           <small>

@@ -44,6 +44,15 @@ export async function createMessage(
     },
   });
 
+  await prisma.conversation.update({
+  where: {
+    id: data.conversationId,
+  },
+  data: {
+    updatedAt: new Date(),
+  },
+});
+
 const io = getIO();
 
 io.to(data.conversationId).emit(
@@ -87,4 +96,54 @@ export async function getMessages(
       createdAt: "asc",
     },
   });
+}
+
+export async function markMessagesAsRead(
+  conversationId: string,
+  userId: string
+) {
+  const participant =
+    await isParticipant(
+      conversationId,
+      userId
+    );
+
+  if (!participant) {
+    throw new Error(
+      "Access denied"
+    );
+  }
+
+  await prisma.message.updateMany({
+    where: {
+      conversationId,
+
+      senderId: {
+        not: userId,
+      },
+
+      isRead: false,
+    },
+
+    data: {
+      isRead: true,
+      readAt: new Date(),
+    },
+  });
+
+  const readMessages =
+  await prisma.message.findMany({
+    where: {
+      conversationId,
+      senderId: {
+        not: userId,
+      },
+      isRead: true,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+return readMessages;
 }

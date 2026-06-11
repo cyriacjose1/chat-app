@@ -24,3 +24,17 @@ export const sendMessage = async (
 
   return res.data;
 };
+
+export async function markAsRead(
+  conversationId: string
+) {
+  const res =
+    await api.post(
+      "/messages/read",
+      {
+        conversationId,
+      }
+    );
+
+  return res.data;
+}
