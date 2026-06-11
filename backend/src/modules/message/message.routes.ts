@@ -8,6 +8,7 @@ import {
 import {
   create,
   list,
+  readMessages,
 } from "./message.controller.js";
 
 const router = Router();
@@ -22,6 +23,12 @@ router.get(
   "/conversation/:id",
   authenticate,
   list
+);
+
+router.post(
+  "/read",
+  authenticate,
+  readMessages
 );
 
 export default router;

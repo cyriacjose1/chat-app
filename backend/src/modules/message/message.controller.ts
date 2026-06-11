@@ -10,6 +10,12 @@ import {
   createMessageSchema,
 } from "./message.validation.js";
 
+import {
+  markMessagesAsRead,
+} from "./message.service.js";
+
+import { getIO } from "../../socket/index.js";
+
 export async function create(
   req: Request,
   res: Response
@@ -67,5 +73,45 @@ export async function list(
         : "Failed to fetch messages",
   });
 }
+}
+
+export async function readMessages(
+  req: any,
+  res: any
+) {
+  try {
+    const userId =
+      req.user.userId;
+
+    const {
+      conversationId,
+    } = req.body;
+
+    const readMessages =
+    await markMessagesAsRead(
+    conversationId,
+    userId
+    );
+
+    getIO().to(conversationId).emit(
+    "messages_read",
+    {
+      messageIds:
+        readMessages.map(
+          (m) => m.id
+        ),
+    }
+  );
+
+    return res.json({
+      success: true,
+    });
+  } catch (error: any) {
+    return res.status(400).json({
+      success: false,
+      message:
+        error.message,
+    });
+  }
 }
 

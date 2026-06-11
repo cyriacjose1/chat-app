@@ -88,3 +88,53 @@ export async function getMessages(
     },
   });
 }
+
+export async function markMessagesAsRead(
+  conversationId: string,
+  userId: string
+) {
+  const participant =
+    await isParticipant(
+      conversationId,
+      userId
+    );
+
+  if (!participant) {
+    throw new Error(
+      "Access denied"
+    );
+  }
+
+  await prisma.message.updateMany({
+    where: {
+      conversationId,
+
+      senderId: {
+        not: userId,
+      },
+
+      isRead: false,
+    },
+
+    data: {
+      isRead: true,
+      readAt: new Date(),
+    },
+  });
+
+  const readMessages =
+  await prisma.message.findMany({
+    where: {
+      conversationId,
+      senderId: {
+        not: userId,
+      },
+      isRead: true,
+    },
+    select: {
+      id: true,
+    },
+  });
+
+return readMessages;
+}

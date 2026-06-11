@@ -98,7 +98,8 @@ export async function createConversation(
 export async function getUserConversations(
   userId: string
 ) {
-  return prisma.conversation.findMany({
+  const conversations =
+  await prisma.conversation.findMany({
     where: {
       participants: {
         some: {
@@ -107,40 +108,74 @@ export async function getUserConversations(
       },
     },
     include: {
-  participants: {
-    include: {
-      user: {
+      participants: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              username: true,
+              email: true,
+            },
+          },
+        },
+      },
+
+      /* FIX: We change 'include' to 'select' for messages so we can explicitly 
+        choose scalar fields (senderId, isRead) alongside the sender relation.
+      */
+      messages: {
+        take: 1,
+        orderBy: {
+          createdAt: "desc",
+        },
         select: {
-          id: true,
-          username: true,
-          email: true,
+          id: true,        // Include message ID if needed
+          content: true,   // Include message content text if needed
+          createdAt: true, // Include creation timestamp if needed
+          senderId: true,  // <--- Valid inside a select block!
+          isRead: true,    // <--- Valid inside a select block!
+          sender: {
+            select: {
+              id: true,
+              username: true,
+            },
+          },
         },
       },
     },
-  },
 
-  messages: {
-  take: 1,
-  orderBy: {
-    createdAt: "desc",
-  },
-  select: {
-    content: true,
-    createdAt: true,
-
-    sender: {
-      select: {
-        id: true,
-        username: true,
-      },
-    },
-  },
-},
-},
     orderBy: {
       updatedAt: "desc",
     },
   });
+
+  const withUnreadCounts =
+    await Promise.all(
+      conversations.map(
+        async (conversation) => {
+          const unreadCount =
+            await prisma.message.count({
+              where: {
+                conversationId:
+                  conversation.id,
+
+                senderId: {
+                  not: userId,
+                },
+
+                isRead: false,
+              },
+            });
+
+          return {
+            ...conversation,
+            unreadCount,
+          };
+        }
+      )
+    );
+
+  return withUnreadCounts;
 }
 
 export async function isParticipant(

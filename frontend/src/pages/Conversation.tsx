@@ -11,14 +11,20 @@ import { socket } from "../socket";
 import {
   getMessages,
   sendMessage,
+  markAsRead,
 } from "../api/message.api";
 
 import { getMessageDateLabel } from "../utils/date";
+
+import { useAuthStore } from "../store/auth.store";
 
 type Message = {
   id: string;
   content: string;
   createdAt: string;
+
+  isRead: boolean;
+  readAt: string | null;
 
   sender: {
     id: string;
@@ -39,10 +45,12 @@ export default function Conversation() {
     useRef<HTMLDivElement>(null);
 
   const [isTyping, setIsTyping] =
-  useState(false);
+    useState(false);
 
   const typingTimeout =
-  useRef<number | null>(null);
+    useRef<number | null>(null);
+
+  const currentUser = useAuthStore((state) => state.user);
 
   const loadMessages =
     async () => {
@@ -60,15 +68,10 @@ export default function Conversation() {
 
   useEffect(() => {
     loadMessages();
+    if (id) {
+      markAsRead(id);
+    }
   }, [id]);
-
-  useEffect(() => {
-    socket.connect();
-
-    return () => {
-      socket.disconnect();
-    };
-  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -80,24 +83,38 @@ export default function Conversation() {
   }, [id]);
 
   useEffect(() => {
-    socket.on(
-      "receive_message",
-      (message: Message) => {
-        setMessages(
-          (prev) => [
-            ...prev,
-            message,
-          ]
-        );
-      }
-    );
-
-    return () => {
-      socket.off(
-        "receive_message"
+  socket.on(
+    "receive_message",
+    async (
+      message: Message
+    ) => {
+      setMessages(
+        (prev) => [
+          ...prev,
+          message,
+        ]
       );
-    };
-  }, []);
+
+      if (
+        id &&
+        message.sender.id !==
+          currentUser?.id
+      ) {
+        try {
+          await markAsRead(id);
+        } catch (error) {
+          console.error(error);
+        }
+      }
+    }
+  );
+
+  return () => {
+    socket.off(
+      "receive_message"
+    );
+  };
+}, [id, currentUser]);
 
   useEffect(() => {
     messagesEndRef.current
@@ -107,30 +124,61 @@ export default function Conversation() {
   }, [messages]);
 
   useEffect(() => {
-  socket.on(
-    "user_typing",
-    () => {
-      setIsTyping(true);
-    }
-  );
-
-  socket.on(
-    "user_stop_typing",
-    () => {
-      setIsTyping(false);
-    }
-  );
-
-  return () => {
-    socket.off(
-      "user_typing"
+    socket.on(
+      "messages_read",
+      ({
+        messageIds,
+      }: {
+        messageIds: string[];
+      }) => {
+        setMessages(
+          (prev) =>
+            prev.map(
+              (message) =>
+                messageIds.includes(
+                  message.id
+                )
+                  ? {
+                      ...message,
+                      isRead: true,
+                    }
+                  : message
+            )
+        );
+      }
     );
 
-    socket.off(
-      "user_stop_typing"
+    return () => {
+      socket.off(
+        "messages_read"
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    socket.on(
+      "user_typing",
+      () => {
+        setIsTyping(true);
+      }
     );
-  };
-}, []);
+
+    socket.on(
+      "user_stop_typing",
+      () => {
+        setIsTyping(false);
+      }
+    );
+
+    return () => {
+      socket.off(
+        "user_typing"
+      );
+      socket.off(
+        "user_stop_typing"
+      );
+    };
+  }, []);
 
   const handleSend =
     async () => {
@@ -146,8 +194,8 @@ export default function Conversation() {
 
         setContent("");
         socket.emit(
-        "typing_stop",
-        id
+          "typing_stop",
+          id
         );
       } catch (error) {
         console.error(error);
@@ -159,110 +207,121 @@ export default function Conversation() {
       <h2>Conversation</h2>
 
       <div>
-  {messages.map(
-    (message, index) => {
-      const currentLabel =
-        getMessageDateLabel(
-          message.createdAt
-        );
-
-      const previousLabel =
-        index > 0
-          ? getMessageDateLabel(
-              messages[
-                index - 1
-              ].createdAt
-            )
-          : null;
-
-      const showDateSeparator =
-        currentLabel !==
-        previousLabel;
-
-      return (
-        <div
-          key={message.id}
-        >
-          {showDateSeparator && (
-            <div>
-              <hr />
-
-              <strong>
-                {
-                  currentLabel
-                }
-              </strong>
-
-              <hr />
-            </div>
-          )}
-
-          <div>
-            <strong>
-              {
-                message.sender
-                  .username
-              }
-            </strong>
-
-            <p>
-              {message.content}
-            </p>
-
-            <small>
-              {new Date(
+        {messages.map(
+          (message, index) => {
+            const currentLabel =
+              getMessageDateLabel(
                 message.createdAt
-              ).toLocaleTimeString(
-                [],
-                {
-                  hour:
-                    "2-digit",
-                  minute:
-                    "2-digit",
-                }
-              )}
-            </small>
-          </div>
-        </div>
-      );
-    }
-  )}
+              );
 
-  <div ref={messagesEndRef} />
-</div>
+            const previousLabel =
+              index > 0
+                ? getMessageDateLabel(
+                    messages[
+                      index - 1
+                    ].createdAt
+                  )
+                : null;
+
+            const showDateSeparator =
+              currentLabel !==
+              previousLabel;
+
+            return (
+              <div
+                key={message.id}
+              >
+                {showDateSeparator && (
+                  <div>
+                    <hr />
+
+                    <strong>
+                      {
+                        currentLabel
+                      }
+                    </strong>
+
+                    <hr />
+                  </div>
+                )}
+
+                <div>
+                  <strong>
+                    {
+                      message.sender
+                        .username
+                    }
+                  </strong>
+
+                  <p>
+                    {message.content}
+                  </p>
+
+                  <small>
+                    {new Date(
+                      message.createdAt
+                    ).toLocaleTimeString(
+                      [],
+                      {
+                        hour:
+                          "2-digit",
+                        minute:
+                          "2-digit",
+                      }
+                    )}
+
+                    {message.sender.id ===
+                      currentUser?.id && (
+                      <small>
+                        {" "}
+                        {message.isRead
+                          ? "✓✓"
+                          : "✓"}
+                      </small>
+                    )}
+                  </small>
+                </div>
+              </div>
+            );
+          }
+        )}
+
+        <div ref={messagesEndRef} />
+      </div>
 
       {isTyping && (
-      <p>
-      Typing...
-      </p>
-     )}
+        <p>
+          Typing...
+        </p>
+      )}
 
       <input
         value={content}
         onChange={(e) => {
-         setContent(
-         e.target.value
-         );
+          setContent(
+            e.target.value
+          );
 
-         if (id) {
-         socket.emit(
-        "typing_start",
-         id
-        );
-        if (typingTimeout.current) {
-        clearTimeout(
-        typingTimeout.current
-       );
-       }
+          if (id) {
+            socket.emit(
+              "typing_start",
+              id
+            );
+            if (typingTimeout.current) {
+              clearTimeout(
+                typingTimeout.current
+              );
+            }
 
-       typingTimeout.current =
-       window.setTimeout(() => {
-       socket.emit(
-      "typing_stop",
-      id
-    );
-  }, 1000);
-      }}}
+            typingTimeout.current =
+              window.setTimeout(() => {
+                socket.emit(
+                  "typing_stop",
+                  id
+                );
+              }, 1000);
+          }
+        }}
         placeholder="Type a message"
       />
 

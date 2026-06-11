@@ -6,22 +6,39 @@ import { socket } from "./socket";
 import { usePresenceStore } from "./store/presence.store";
 
 function App() {
-  const token = useAuthStore((state) => state.token);
-  const setUser = useAuthStore((state) => state.setUser);
-  const user = useAuthStore((state) => state.user);
-  const setOnlineUsers =usePresenceStore((state) => state.setOnlineUsers);
+  const token = useAuthStore(
+    (state) => state.token
+  );
+
+  const user = useAuthStore(
+    (state) => state.user
+  );
+
+  const setUser = useAuthStore(
+    (state) => state.setUser
+  );
+
+  const setOnlineUsers =
+    usePresenceStore(
+      (state) => state.setOnlineUsers
+    );
 
   useEffect(() => {
-    const restoreSession = async () => {
-      if (!token) return;
+    const restoreSession =
+      async () => {
+        if (!token) return;
 
-      try {
-        const res = await getCurrentUser();
-        setUser(res.user);
-      } catch {
-        console.error("Failed to restore session");
-      }
-    };
+        try {
+          const res =
+            await getCurrentUser();
+
+          setUser(res.user);
+        } catch {
+          console.error(
+            "Failed to restore session"
+          );
+        }
+      };
 
     restoreSession();
   }, [token, setUser]);
@@ -39,25 +56,42 @@ function App() {
   useEffect(() => {
     if (!user) return;
 
-    socket.emit("register_user", user.id);
+    const registerUser = () => {
+      socket.emit(
+        "register_user",
+        user.id
+      );
+    };
+
+    registerUser();
+
+    socket.on(
+      "connect",
+      registerUser
+    );
+
+    return () => {
+      socket.off(
+        "connect",
+        registerUser
+      );
+    };
   }, [user]);
 
   useEffect(() => {
-  socket.on(
-    "online_users",
-    (users: string[]) => {
-      setOnlineUsers(
-        users
-      );
-    }
-  );
-
-  return () => {
-    socket.off(
-      "online_users"
+    socket.on(
+      "online_users",
+      (users: string[]) => {
+        setOnlineUsers(users);
+      }
     );
-  };
-}, [setOnlineUsers]);
+
+    return () => {
+      socket.off(
+        "online_users"
+      );
+    };
+  }, [setOnlineUsers]);
 
   return <AppRouter />;
 }
