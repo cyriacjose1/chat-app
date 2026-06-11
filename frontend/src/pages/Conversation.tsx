@@ -13,6 +13,7 @@ import {
   sendMessage,
 } from "../api/message.api";
 
+import { getMessageDateLabel } from "../utils/date";
 
 type Message = {
   id: string;
@@ -158,10 +159,50 @@ export default function Conversation() {
       <h2>Conversation</h2>
 
       <div>
-        {messages.map((message) => (
-          <div key={message.id}>
+  {messages.map(
+    (message, index) => {
+      const currentLabel =
+        getMessageDateLabel(
+          message.createdAt
+        );
+
+      const previousLabel =
+        index > 0
+          ? getMessageDateLabel(
+              messages[
+                index - 1
+              ].createdAt
+            )
+          : null;
+
+      const showDateSeparator =
+        currentLabel !==
+        previousLabel;
+
+      return (
+        <div
+          key={message.id}
+        >
+          {showDateSeparator && (
+            <div>
+              <hr />
+
+              <strong>
+                {
+                  currentLabel
+                }
+              </strong>
+
+              <hr />
+            </div>
+          )}
+
+          <div>
             <strong>
-              {message.sender.username}
+              {
+                message.sender
+                  .username
+              }
             </strong>
 
             <p>
@@ -174,16 +215,21 @@ export default function Conversation() {
               ).toLocaleTimeString(
                 [],
                 {
-                  hour: "2-digit",
-                  minute: "2-digit",
+                  hour:
+                    "2-digit",
+                  minute:
+                    "2-digit",
                 }
               )}
             </small>
           </div>
-        ))}
+        </div>
+      );
+    }
+  )}
 
-        <div ref={messagesEndRef} />
-      </div>
+  <div ref={messagesEndRef} />
+</div>
 
       {isTyping && (
       <p>

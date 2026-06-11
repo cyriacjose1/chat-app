@@ -6,6 +6,8 @@ import { useAuthStore } from "../store/auth.store";
 
 import { usePresenceStore } from "../store/presence.store";
 
+import { formatConversationTime } from "../utils/date";
+
 type Participant = {
   user: {
     id: string;
@@ -109,12 +111,9 @@ export default function Conversations() {
           {latestMessage && (
   <div>
     <small>
-      {new Date(
+      {formatConversationTime(
         latestMessage.createdAt
-      ).toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}
+      )}
     </small>
   </div>
 )}
