@@ -107,18 +107,36 @@ export async function getUserConversations(
       },
     },
     include: {
-      participants: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-              email: true,
-            },
-          },
+  participants: {
+    include: {
+      user: {
+        select: {
+          id: true,
+          username: true,
+          email: true,
         },
       },
     },
+  },
+
+  messages: {
+  take: 1,
+  orderBy: {
+    createdAt: "desc",
+  },
+  select: {
+    content: true,
+    createdAt: true,
+
+    sender: {
+      select: {
+        id: true,
+        username: true,
+      },
+    },
+  },
+},
+},
     orderBy: {
       updatedAt: "desc",
     },

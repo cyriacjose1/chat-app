@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { getUsers } from "../api/user.api";
 import { createConversation } from "../api/conversation.api";
 import { useAuthStore } from "../store/auth.store";
+import { usePresenceStore } from "../store/presence.store";
 
 type User = {
   id: string;
@@ -21,6 +22,12 @@ export default function Users() {
     useAuthStore(
       (state) => state.user
     );
+
+  const onlineUsers =
+  usePresenceStore(
+    (state) =>
+      state.onlineUsers
+  );
 
   useEffect(() => {
     async function loadUsers() {
@@ -68,7 +75,17 @@ export default function Users() {
         )
         .map((user) => (
           <div key={user.id}>
-            <p>{user.username}</p>
+            <p>
+              {user.username}
+
+              {" "}
+
+              {onlineUsers.includes(
+              user.id
+              )
+              ? "🟢 Online"
+              : "⚫ Offline"}
+            </p>
 
             <p>{user.email}</p>
 

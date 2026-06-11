@@ -1,4 +1,9 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+  useRef,
+} from "react";
+
 import { useParams } from "react-router-dom";
 
 import { socket } from "../socket";
@@ -8,9 +13,13 @@ import {
   sendMessage,
 } from "../api/message.api";
 
+import { getMessageDateLabel } from "../utils/date";
+
 type Message = {
   id: string;
   content: string;
+  createdAt: string;
+
   sender: {
     id: string;
     username: string;
@@ -25,6 +34,15 @@ export default function Conversation() {
 
   const [content, setContent] =
     useState("");
+
+  const messagesEndRef =
+    useRef<HTMLDivElement>(null);
+
+  const [isTyping, setIsTyping] =
+  useState(false);
+
+  const typingTimeout =
+  useRef<number | null>(null);
 
   const loadMessages =
     async () => {
@@ -64,7 +82,7 @@ export default function Conversation() {
   useEffect(() => {
     socket.on(
       "receive_message",
-      (message) => {
+      (message: Message) => {
         setMessages(
           (prev) => [
             ...prev,
@@ -81,6 +99,39 @@ export default function Conversation() {
     };
   }, []);
 
+  useEffect(() => {
+    messagesEndRef.current
+      ?.scrollIntoView({
+        behavior: "smooth",
+      });
+  }, [messages]);
+
+  useEffect(() => {
+  socket.on(
+    "user_typing",
+    () => {
+      setIsTyping(true);
+    }
+  );
+
+  socket.on(
+    "user_stop_typing",
+    () => {
+      setIsTyping(false);
+    }
+  );
+
+  return () => {
+    socket.off(
+      "user_typing"
+    );
+
+    socket.off(
+      "user_stop_typing"
+    );
+  };
+}, []);
+
   const handleSend =
     async () => {
       if (!id || !content.trim()) {
@@ -94,6 +145,10 @@ export default function Conversation() {
         );
 
         setContent("");
+        socket.emit(
+        "typing_stop",
+        id
+        );
       } catch (error) {
         console.error(error);
       }
@@ -104,24 +159,110 @@ export default function Conversation() {
       <h2>Conversation</h2>
 
       <div>
-        {messages.map((message) => (
-          <div key={message.id}>
+  {messages.map(
+    (message, index) => {
+      const currentLabel =
+        getMessageDateLabel(
+          message.createdAt
+        );
+
+      const previousLabel =
+        index > 0
+          ? getMessageDateLabel(
+              messages[
+                index - 1
+              ].createdAt
+            )
+          : null;
+
+      const showDateSeparator =
+        currentLabel !==
+        previousLabel;
+
+      return (
+        <div
+          key={message.id}
+        >
+          {showDateSeparator && (
+            <div>
+              <hr />
+
+              <strong>
+                {
+                  currentLabel
+                }
+              </strong>
+
+              <hr />
+            </div>
+          )}
+
+          <div>
             <strong>
-              {message.sender.username}
+              {
+                message.sender
+                  .username
+              }
             </strong>
 
-            <p>{message.content}</p>
+            <p>
+              {message.content}
+            </p>
+
+            <small>
+              {new Date(
+                message.createdAt
+              ).toLocaleTimeString(
+                [],
+                {
+                  hour:
+                    "2-digit",
+                  minute:
+                    "2-digit",
+                }
+              )}
+            </small>
           </div>
-        ))}
-      </div>
+        </div>
+      );
+    }
+  )}
+
+  <div ref={messagesEndRef} />
+</div>
+
+      {isTyping && (
+      <p>
+      Typing...
+      </p>
+     )}
 
       <input
         value={content}
-        onChange={(e) =>
-          setContent(
-            e.target.value
-          )
-        }
+        onChange={(e) => {
+         setContent(
+         e.target.value
+         );
+
+         if (id) {
+         socket.emit(
+        "typing_start",
+         id
+        );
+        if (typingTimeout.current) {
+        clearTimeout(
+        typingTimeout.current
+       );
+       }
+
+       typingTimeout.current =
+       window.setTimeout(() => {
+       socket.emit(
+      "typing_stop",
+      id
+    );
+  }, 1000);
+      }}}
         placeholder="Type a message"
       />
 
